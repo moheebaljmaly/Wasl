@@ -146,18 +146,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/conversations", authenticateToken, async (req: any, res) => {
     try {
-      const { participant_email } = z.object({
-        participant_email: z.string().email()
+      const { participant_username } = z.object({
+        participant_username: z.string().min(1)
       }).parse(req.body);
 
       // Find the other participant
-      const otherParticipant = await storage.getProfileByEmail(participant_email);
+      const otherParticipant = await storage.getProfileByUsername(participant_username);
       if (!otherParticipant) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
       if (otherParticipant.id === req.user.id) {
-        return res.status(400).json({ error: "Cannot create conversation with yourself" });
+        return res.status(400).json({ error: "لا يمكن إنشاء محادثة مع نفسك" });
       }
 
       // Check if conversation already exists
@@ -261,18 +261,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profiles route for searching users
   app.get("/api/profiles/search", authenticateToken, async (req: any, res) => {
     try {
-      const { email } = z.object({
-        email: z.string().email()
+      const { username } = z.object({
+        username: z.string().min(1)
       }).parse(req.query);
 
-      const profile = await storage.getProfileByEmail(email);
+      const profile = await storage.getProfileByUsername(username);
       if (!profile) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
       res.json({ ...profile, password: undefined });
     } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : "Search failed" });
+      res.status(400).json({ error: error instanceof Error ? error.message : "فشل البحث" });
     }
   });
 

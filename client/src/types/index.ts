@@ -2,6 +2,7 @@
 export interface User {
   id: string;
   email: string;
+  username: string;
   full_name: string | null;
   avatar_url: string | null;
   created_at: string;
@@ -11,6 +12,7 @@ export interface User {
 export interface Profile {
   id: string;
   email: string;
+  username: string;
   full_name: string | null;
   avatar_url: string | null;
   created_at: string;

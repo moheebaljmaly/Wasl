@@ -44,10 +44,10 @@ class ApiClient {
   }
 
   // Auth methods
-  async signUp(email: string, password: string, fullName: string): Promise<AuthResponse> {
+  async signUp(email: string, username: string, password: string, fullName: string): Promise<AuthResponse> {
     return this.request<AuthResponse>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, full_name: fullName }),
+      body: JSON.stringify({ email, username, password, full_name: fullName }),
     });
   }
 
@@ -73,10 +73,10 @@ class ApiClient {
     return this.request<Conversation[]>('/conversations');
   }
 
-  async createConversation(participantEmail: string): Promise<Conversation> {
+  async createConversation(participantUsername: string): Promise<Conversation> {
     return this.request<Conversation>('/conversations', {
       method: 'POST',
-      body: JSON.stringify({ participant_email: participantEmail }),
+      body: JSON.stringify({ participant_username: participantUsername }),
     });
   }
 
@@ -93,8 +93,8 @@ class ApiClient {
   }
 
   // Profile methods
-  async searchProfile(email: string): Promise<User> {
-    return this.request<User>(`/profiles/search?email=${encodeURIComponent(email)}`);
+  async searchProfile(username: string): Promise<User> {
+    return this.request<User>(`/profiles/search?username=${encodeURIComponent(username)}`);
   }
 }
 
