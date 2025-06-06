@@ -35,14 +35,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { email, password, full_name } = insertProfileSchema.extend({
+      const { email, username, password, full_name } = insertProfileSchema.extend({
         full_name: z.string().optional()
       }).parse(req.body);
 
       // Check if user already exists
       const existingUser = await storage.getProfileByEmail(email);
       if (existingUser) {
-        return res.status(400).json({ error: "User already exists" });
+        return res.status(400).json({ error: "المستخدم موجود بالفعل" });
+      }
+
+      // Check if username already exists
+      const existingUsername = await storage.getProfileByUsername(username);
+      if (existingUsername) {
+        return res.status(400).json({ error: "اسم المستخدم موجود بالفعل" });
       }
 
       // Hash password
@@ -51,6 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create user
       const user = await storage.createProfile({
         email,
+        username,
         password: hashedPassword,
         full_name: full_name || null
       });

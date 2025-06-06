@@ -7,6 +7,7 @@ import { relations } from "drizzle-orm";
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
+  username: text("username").notNull().unique(),
   password: text("password").notNull(),
   full_name: text("full_name"),
   avatar_url: text("avatar_url"),
@@ -69,6 +70,7 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 // Insert schemas
 export const insertProfileSchema = createInsertSchema(profiles).pick({
   email: true,
+  username: true,
   password: true,
   full_name: true,
 });
