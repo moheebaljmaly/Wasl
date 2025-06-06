@@ -2,12 +2,15 @@
 export interface User {
   id: string;
   email: string;
-  full_name?: string;
-  avatar_url?: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Profile {
   id: string;
+  email: string;
   full_name: string | null;
   avatar_url: string | null;
   created_at: string;
@@ -40,4 +43,18 @@ export interface AuthCredentials {
   token: string;
   lastLogin: string;
   rememberMe: boolean;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+  session: {
+    access_token: string;
+    user: User;
+  };
+}
+
+export interface Session {
+  access_token: string;
+  user: User;
 }

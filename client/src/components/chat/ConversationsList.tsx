@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, MessageCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Conversation, Message, Profile } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -34,70 +34,8 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
     if (!user) return;
 
     try {
-      // جلب المحادثات
-      const { data: conversationsData, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (!conversationsData || conversationsData.length === 0) {
-        setConversations([]);
-        setLoading(false);
-        return;
-      }
-
-      // إضافة بيانات المشارك الآخر وآخر رسالة
-      const conversationsWithDetails = await Promise.all(
-        conversationsData.map(async (conv) => {
-          const otherParticipantId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
-          
-          // جلب بيانات المشارك الآخر
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', otherParticipantId)
-            .single();
-
-          // جلب آخر رسالة مع جميع الحقول المطلوبة
-          const { data: lastMessageData } = await supabase
-            .from('messages')
-            .select('id, content, created_at, sender_id, conversation_id, status, is_offline')
-            .eq('conversation_id', conv.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-          let lastMessage: Message | undefined;
-          if (lastMessageData) {
-            lastMessage = {
-              id: lastMessageData.id,
-              conversation_id: lastMessageData.conversation_id,
-              sender_id: lastMessageData.sender_id,
-              content: lastMessageData.content,
-              status: lastMessageData.status as 'sending' | 'sent' | 'failed' | 'delivered',
-              is_offline: lastMessageData.is_offline,
-              created_at: lastMessageData.created_at
-            };
-          }
-
-          const conversation: Conversation = {
-            id: conv.id,
-            participant_1: conv.participant_1,
-            participant_2: conv.participant_2,
-            created_at: conv.created_at,
-            updated_at: conv.updated_at,
-            other_participant: profile as Profile,
-            last_message: lastMessage
-          };
-
-          return conversation;
-        })
-      );
-
-      setConversations(conversationsWithDetails);
+      const conversationsData = await apiClient.getConversations();
+      setConversations(conversationsData);
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {

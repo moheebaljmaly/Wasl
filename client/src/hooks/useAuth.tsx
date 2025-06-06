@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@/types';
+import { apiClient } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -21,98 +21,124 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // إعداد مستمع حالة المصادقة أولاً
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // حفظ بيانات الاعتماد إذا كان "تذكرني" مفعل
-        if (session?.user && localStorage.getItem('rememberMe') === 'true') {
-          const credentials = {
-            userId: session.user.id,
-            token: session.access_token,
-            lastLogin: new Date().toISOString(),
-            rememberMe: true
-          };
-          localStorage.setItem('authCredentials', JSON.stringify(credentials));
-        }
-      }
-    );
-
-    // التحقق من الجلسة الحالية
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    checkAuthState();
   }, []);
+
+  const checkAuthState = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      apiClient.setToken(token);
+      const { user: currentUser } = await apiClient.getCurrentUser();
+      setUser(currentUser);
+      setSession({
+        access_token: token,
+        user: currentUser
+      });
+      
+      // حفظ بيانات الاعتماد إذا كان "تذكرني" مفعل
+      if (localStorage.getItem('rememberMe') === 'true') {
+        const credentials = {
+          userId: currentUser.id,
+          token,
+          lastLogin: new Date().toISOString(),
+          rememberMe: true
+        };
+        localStorage.setItem('authCredentials', JSON.stringify(credentials));
+      }
+    } catch (error) {
+      // Token invalid, clear it
+      apiClient.clearToken();
+      localStorage.removeItem('authCredentials');
+      localStorage.removeItem('rememberMe');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const signIn = async (email: string, password: string, rememberMe = false) => {
     setLoading(true);
     
-    // حفظ حالة "تذكرني"
-    localStorage.setItem('rememberMe', rememberMe.toString());
-    
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
+    try {
+      // حفظ حالة "تذكرني"
+      localStorage.setItem('rememberMe', rememberMe.toString());
+      
+      const response = await apiClient.signIn(email, password);
+      
+      apiClient.setToken(response.token);
+      setUser(response.user);
+      setSession(response.session);
+      
+      if (rememberMe) {
+        const credentials = {
+          userId: response.user.id,
+          token: response.token,
+          lastLogin: new Date().toISOString(),
+          rememberMe: true
+        };
+        localStorage.setItem('authCredentials', JSON.stringify(credentials));
+      }
+      
       setLoading(false);
+      return { error: null };
+    } catch (error) {
+      setLoading(false);
+      const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
+      return { error: errorMessage };
     }
-
-    return { error };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     setLoading(true);
     
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName
-        }
-      }
-    });
-
-    if (error) {
+    try {
+      const response = await apiClient.signUp(email, password, fullName);
+      
+      apiClient.setToken(response.token);
+      setUser(response.user);
+      setSession(response.session);
+      
       setLoading(false);
       toast({
+        title: "تم التسجيل بنجاح",
+        description: "مرحباً بك! تم إنشاء حسابك بنجاح",
+      });
+      return { error: null };
+    } catch (error) {
+      setLoading(false);
+      const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
+      toast({
         title: "خطأ في التسجيل",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "تم التسجيل بنجاح",
-        description: "يرجى التحقق من بريدك الإلكتروني لتأكيد الحساب",
-      });
+      return { error: errorMessage };
     }
-
-    return { error };
   };
 
   const signOut = async () => {
+    try {
+      await apiClient.signOut();
+    } catch (error) {
+      // Continue with sign out even if API call fails
+    }
+    
     // مسح بيانات الاعتماد المحفوظة
+    apiClient.clearToken();
     localStorage.removeItem('authCredentials');
     localStorage.removeItem('rememberMe');
     
-    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
     
     toast({
       title: "تم تسجيل الخروج",
