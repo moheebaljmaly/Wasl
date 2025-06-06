@@ -120,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const conversations = await storage.getConversationsForUser(req.user.id);
       
-      // Get conversation details with other participant and last message
+      // Get conversation details with other participant, last message, and unread count
       const conversationsWithDetails = await Promise.all(
         conversations.map(async (conv) => {
           const otherParticipantId = conv.participant_1 === req.user.id ? conv.participant_2 : conv.participant_1;
@@ -130,10 +130,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const messages = await storage.getMessagesForConversation(conv.id);
           const lastMessage = messages[messages.length - 1];
           
+          // Get unread messages count
+          const unreadCount = await storage.getUnreadMessagesCount(conv.id, req.user.id);
+          
           return {
             ...conv,
             other_participant: otherParticipant ? { ...otherParticipant, password: undefined } : null,
-            last_message: lastMessage || null
+            last_message: lastMessage || null,
+            unread_count: unreadCount
           };
         })
       );
@@ -201,6 +205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const messages = await storage.getMessagesForConversation(conversationId);
+      
+      // Mark messages as read when user opens conversation
+      await storage.markMessagesAsRead(conversationId, req.user.id);
       
       // Add sender info to messages
       const messagesWithSender = await Promise.all(

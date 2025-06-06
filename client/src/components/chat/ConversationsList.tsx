@@ -137,10 +137,10 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
                   )}
                 </div>
                 
-                {/* شارة الرسائل غير المقروءة - سيتم تطويرها لاحقاً */}
-                {false && (
-                  <Badge variant="default" className="rounded-full">
-                    2
+                {/* شارة الرسائل غير المقروءة */}
+                {(conversation.unread_count || 0) > 0 && (
+                  <Badge className="bg-blue-500 text-white min-w-[20px] h-5 flex items-center justify-center rounded-full text-xs">
+                    {(conversation.unread_count || 0) > 99 ? '99+' : conversation.unread_count}
                   </Badge>
                 )}
               </div>

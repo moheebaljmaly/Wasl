@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { Send, ArrowRight, Wifi, WifiOff } from 'lucide-react';
+import { Send, ArrowRight, Wifi, WifiOff, MoreVertical } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Conversation, Message } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
+import { ProfileDialog } from './ProfileDialog';
 
 interface ChatAreaProps {
   conversation: Conversation | null;

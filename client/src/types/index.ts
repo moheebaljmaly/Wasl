@@ -27,6 +27,7 @@ export interface Conversation {
   updated_at: string;
   last_message?: Message;
   other_participant?: Profile;
+  unread_count?: number;
 }
 
 export interface Message {
