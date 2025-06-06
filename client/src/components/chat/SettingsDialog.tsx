@@ -25,7 +25,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
 
   // Update fullName and avatarUrl when user data changes
   useEffect(() => {
@@ -96,6 +96,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
       if (Object.keys(updates).length > 0) {
         await apiClient.updateProfile(updates);
+        // إعادة تحميل الصفحة لضمان ظهور التحديثات للجميع
+        window.location.reload();
         toast({
           title: "تم تحديث الملف الشخصي",
           description: "تم حفظ التغييرات بنجاح",

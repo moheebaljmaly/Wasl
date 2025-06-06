@@ -11,6 +11,7 @@ interface AuthContextType {
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: any }>;
   signUp: (email: string, username: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -146,6 +147,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const refreshUser = async () => {
+    try {
+      const { user: currentUser } = await apiClient.getCurrentUser();
+      setUser(currentUser);
+      if (session) {
+        setSession({
+          ...session,
+          user: currentUser
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -154,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       signOut,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>
