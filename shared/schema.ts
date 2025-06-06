@@ -32,6 +32,7 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   status: text("status").notNull().default("sent"), // 'sending' | 'sent' | 'failed' | 'delivered'
   is_offline: boolean("is_offline").default(false).notNull(),
+  is_read: boolean("is_read").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

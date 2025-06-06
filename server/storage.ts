@@ -9,7 +9,7 @@ import {
   type Message,
   type InsertMessage 
 } from "@shared/schema";
-import { eq, or, desc, and, sql } from "drizzle-orm";
+import { eq, or, desc, and, sql, ne } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
@@ -31,6 +31,8 @@ export interface IStorage {
   getMessagesForConversation(conversationId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   updateMessage(id: string, updates: Partial<Message>): Promise<Message | undefined>;
+  getUnreadMessagesCount(conversationId: string, userId: string): Promise<number>;
+  markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
   
   // Legacy compatibility
   getUser(id: string): Promise<Profile | undefined>;
@@ -168,6 +170,28 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(user: InsertProfile): Promise<Profile> {
     return this.createProfile(user);
+  }
+
+  async getUnreadMessagesCount(conversationId: string, userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(and(
+        eq(messages.conversation_id, conversationId),
+        eq(messages.is_read, false),
+        ne(messages.sender_id, userId)
+      ));
+    
+    return result[0]?.count || 0;
+  }
+
+  async markMessagesAsRead(conversationId: string, userId: string): Promise<void> {
+    await db.update(messages)
+      .set({ is_read: true })
+      .where(and(
+        eq(messages.conversation_id, conversationId),
+        ne(messages.sender_id, userId),
+        eq(messages.is_read, false)
+      ));
   }
 }
 
