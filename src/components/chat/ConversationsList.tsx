@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Plus, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Conversation } from '@/types';
+import { Conversation, Message, Profile } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -34,26 +34,24 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
     if (!user) return;
 
     try {
-      // جلب المحادثات مع بيانات المشارك الآخر وآخر رسالة
+      // جلب المحادثات
       const { data: conversationsData, error } = await supabase
         .from('conversations')
-        .select(`
-          *,
-          messages:messages(
-            id,
-            content,
-            created_at,
-            sender_id
-          )
-        `)
+        .select('*')
         .or(`participant_1.eq.${user.id},participant_2.eq.${user.id}`)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
+      if (!conversationsData || conversationsData.length === 0) {
+        setConversations([]);
+        setLoading(false);
+        return;
+      }
+
       // إضافة بيانات المشارك الآخر وآخر رسالة
       const conversationsWithDetails = await Promise.all(
-        conversationsData?.map(async (conv) => {
+        conversationsData.map(async (conv) => {
           const otherParticipantId = conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1;
           
           // جلب بيانات المشارك الآخر
@@ -63,17 +61,40 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
             .eq('id', otherParticipantId)
             .single();
 
-          // الحصول على آخر رسالة
-          const lastMessage = conv.messages?.sort((a: any, b: any) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          )[0];
+          // جلب آخر رسالة
+          const { data: lastMessageData } = await supabase
+            .from('messages')
+            .select('id, content, created_at, sender_id, conversation_id, status, is_offline')
+            .eq('conversation_id', conv.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
 
-          return {
-            ...conv,
-            other_participant: profile,
+          let lastMessage: Message | undefined;
+          if (lastMessageData) {
+            lastMessage = {
+              id: lastMessageData.id,
+              conversation_id: lastMessageData.conversation_id,
+              sender_id: lastMessageData.sender_id,
+              content: lastMessageData.content,
+              status: lastMessageData.status as 'sending' | 'sent' | 'failed' | 'delivered',
+              is_offline: lastMessageData.is_offline,
+              created_at: lastMessageData.created_at
+            };
+          }
+
+          const conversation: Conversation = {
+            id: conv.id,
+            participant_1: conv.participant_1,
+            participant_2: conv.participant_2,
+            created_at: conv.created_at,
+            updated_at: conv.updated_at,
+            other_participant: profile as Profile,
             last_message: lastMessage
           };
-        }) || []
+
+          return conversation;
+        })
       );
 
       setConversations(conversationsWithDetails);

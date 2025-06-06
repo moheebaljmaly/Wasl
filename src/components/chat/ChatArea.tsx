@@ -75,14 +75,37 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
       const { data, error } = await supabase
         .from('messages')
         .select(`
-          *,
-          sender:profiles(*)
+          id,
+          conversation_id,
+          sender_id,
+          content,
+          status,
+          is_offline,
+          created_at,
+          sender:profiles(
+            id,
+            full_name,
+            avatar_url
+          )
         `)
         .eq('conversation_id', conversation.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      // تحويل البيانات للنوع المطلوب
+      const formattedMessages: Message[] = (data || []).map(msg => ({
+        id: msg.id,
+        conversation_id: msg.conversation_id,
+        sender_id: msg.sender_id,
+        content: msg.content,
+        status: msg.status as 'sending' | 'sent' | 'failed' | 'delivered',
+        is_offline: msg.is_offline,
+        created_at: msg.created_at,
+        sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender
+      }));
+      
+      setMessages(formattedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -109,10 +132,16 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
             .eq('id', payload.new.sender_id)
             .single();
 
-          const newMessage = {
-            ...payload.new,
+          const newMessage: Message = {
+            id: payload.new.id,
+            conversation_id: payload.new.conversation_id,
+            sender_id: payload.new.sender_id,
+            content: payload.new.content,
+            status: payload.new.status as 'sending' | 'sent' | 'failed' | 'delivered',
+            is_offline: payload.new.is_offline,
+            created_at: payload.new.created_at,
             sender
-          } as Message;
+          };
 
           setMessages(prev => [...prev, newMessage]);
         }
@@ -133,15 +162,15 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
 
     if (!isOnline) {
       // حفظ الرسالة محلياً للإرسال لاحقاً
-      const offlineMessage = {
+      const offlineMessage: Message = {
         id: `temp-${Date.now()}`,
         conversation_id: conversation.id,
         sender_id: user.id,
         content: messageContent,
-        status: 'sending' as const,
+        status: 'sending',
         is_offline: true,
         created_at: new Date().toISOString(),
-        sender: null
+        sender: undefined
       };
 
       setMessages(prev => [...prev, offlineMessage]);
