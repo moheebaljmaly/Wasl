@@ -61,14 +61,46 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
 
     try {
       setSearchLoading(true);
-      const profile = await apiClient.searchProfile(searchTerm);
-      setUsers([profile as Profile]);
+      
+      // Try searching by username first
+      try {
+        const profile = await apiClient.searchProfile(searchTerm);
+        setUsers([profile as Profile]);
+        return;
+      } catch (usernameError) {
+        // If username search fails, try email search if it looks like an email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(searchTerm)) {
+          try {
+            const response = await fetch(`/api/profiles/search-by-email?email=${encodeURIComponent(searchTerm)}`, {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('auth') ? JSON.parse(localStorage.getItem('auth')!).token : ''}`,
+              }
+            });
+            if (response.ok) {
+              const profile = await response.json();
+              setUsers([profile as Profile]);
+              return;
+            }
+          } catch (emailError) {
+            console.error('Email search error:', emailError);
+          }
+        }
+        
+        // If both searches fail, show error
+        setUsers([]);
+        toast({
+          title: "المستخدم غير موجود",
+          description: "تأكد من اسم المستخدم أو البريد الإلكتروني",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error searching users:', error);
       setUsers([]);
       toast({
-        title: "المستخدم غير موجود",
-        description: "تأكد من اسم المستخدم",
+        title: "خطأ في البحث",
+        description: "حاول مرة أخرى",
         variant: "destructive",
       });
     } finally {
@@ -120,7 +152,7 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
           <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="البحث بـ اسم المستخدم..."
+              placeholder="البحث بـ اسم المستخدم أو البريد الإلكتروني..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pr-10 text-right"

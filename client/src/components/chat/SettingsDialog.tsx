@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [notifications, setNotifications] = useState(true);
   const [loading, setLoading] = useState(false);
   const { user, signOut } = useAuth();
+
+  // Update fullName when user data changes
+  useEffect(() => {
+    if (user?.full_name) {
+      setFullName(user.full_name);
+    }
+  }, [user]);
 
   const handleUpdateProfile = async () => {
     if (!user) return;

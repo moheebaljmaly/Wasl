@@ -258,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Profiles route for searching users
+  // Profiles route for searching users by username
   app.get("/api/profiles/search", authenticateToken, async (req: any, res) => {
     try {
       const { username } = z.object({
@@ -266,6 +266,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).parse(req.query);
 
       const profile = await storage.getProfileByUsername(username);
+      if (!profile) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      res.json({ ...profile, password: undefined });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "فشل البحث" });
+    }
+  });
+
+  // Profiles route for searching users by email
+  app.get("/api/profiles/search-by-email", authenticateToken, async (req: any, res) => {
+    try {
+      const { email } = z.object({
+        email: z.string().email()
+      }).parse(req.query);
+
+      const profile = await storage.getProfileByEmail(email);
       if (!profile) {
         return res.status(404).json({ error: "المستخدم غير موجود" });
       }

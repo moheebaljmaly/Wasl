@@ -75,14 +75,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversationsForUser(userId: string): Promise<Conversation[]> {
-    const result = await db.select()
-      .from(conversations)
-      .where(or(
-        eq(conversations.participant_1, userId),
-        eq(conversations.participant_2, userId)
-      ))
-      .orderBy(desc(conversations.updated_at));
-    return result;
+    const result = await db.select({
+      id: conversations.id,
+      participant_1: conversations.participant_1,
+      participant_2: conversations.participant_2,
+      created_at: conversations.created_at,
+      updated_at: conversations.updated_at,
+      // Get the other participant's details
+      other_participant: {
+        id: profiles.id,
+        username: profiles.username,
+        email: profiles.email,
+        full_name: profiles.full_name,
+        avatar_url: profiles.avatar_url,
+        created_at: profiles.created_at,
+        updated_at: profiles.updated_at
+      }
+    })
+    .from(conversations)
+    .leftJoin(profiles, or(
+      and(eq(conversations.participant_1, profiles.id), eq(conversations.participant_2, userId)),
+      and(eq(conversations.participant_2, profiles.id), eq(conversations.participant_1, userId))
+    ))
+    .where(or(
+      eq(conversations.participant_1, userId),
+      eq(conversations.participant_2, userId)
+    ))
+    .orderBy(desc(conversations.updated_at));
+    
+    return result.map(row => ({
+      id: row.id,
+      participant_1: row.participant_1,
+      participant_2: row.participant_2,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      other_participant: row.other_participant
+    }));
   }
 
   async createConversation(conversation: InsertConversation): Promise<Conversation> {
