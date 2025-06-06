@@ -59,13 +59,6 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
   const searchUsers = async () => {
     if (!user || !searchTerm.trim()) return;
 
-    // Check if search term is a valid email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(searchTerm)) {
-      setUsers([]);
-      return;
-    }
-
     try {
       setSearchLoading(true);
       const profile = await apiClient.searchProfile(searchTerm);
@@ -75,7 +68,7 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
       setUsers([]);
       toast({
         title: "المستخدم غير موجود",
-        description: "تأكد من البريد الإلكتروني",
+        description: "تأكد من اسم المستخدم",
         variant: "destructive",
       });
     } finally {

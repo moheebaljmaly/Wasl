@@ -97,11 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, username: string, password: string, fullName: string) => {
     setLoading(true);
     
     try {
-      const response = await apiClient.signUp(email, password, fullName);
+      const response = await apiClient.signUp(email, username, password, fullName);
       
       apiClient.setToken(response.token);
       setUser(response.user);

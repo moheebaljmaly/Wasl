@@ -12,6 +12,7 @@ import { MessageCircle } from 'lucide-react';
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -27,7 +28,7 @@ export function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, username, password, fullName);
     if (!error) {
       setIsLogin(true);
     }
@@ -104,6 +105,18 @@ export function AuthPage() {
                     required
                     className="text-right"
                     placeholder="اسمك الكامل"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">اسم المستخدم</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    className="text-right"
+                    placeholder="اسم المستخدم"
                   />
                 </div>
                 <div className="space-y-2">
