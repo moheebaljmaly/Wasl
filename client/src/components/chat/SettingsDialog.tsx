@@ -63,20 +63,53 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     setUploading(true);
 
-    // Convert to base64 for simple storage
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string;
-      setAvatarUrl(base64);
+    // ضغط الصورة قبل الرفع
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      // تحديد أبعاد الصورة المضغوطة
+      const maxSize = 300;
+      let { width, height } = img;
+      
+      if (width > height) {
+        if (width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
+        }
+      } else {
+        if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // رسم الصورة المضغوطة
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      // تحويل إلى base64 مع جودة مضغوطة
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+      setAvatarUrl(compressedBase64);
       setUploading(false);
     };
-    reader.onerror = () => {
+    
+    img.onerror = () => {
       toast({
-        title: "خطأ في رفع الصورة",
+        title: "خطأ في معالجة الصورة",
         description: "حاول مرة أخرى",
         variant: "destructive",
       });
       setUploading(false);
+    };
+    
+    // قراءة الملف كـ URL للصورة
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
   };

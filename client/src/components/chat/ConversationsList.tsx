@@ -27,8 +27,8 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
   useEffect(() => {
     if (user) {
       fetchConversations();
-      // تحديث المحادثات كل 5 ثوانِ للتأكد من عرض الرسائل الجديدة
-      const interval = setInterval(fetchConversations, 5000);
+      // تحديث المحادثات كل 3 ثوانِ للتأكد من عرض الرسائل الجديدة
+      const interval = setInterval(fetchConversations, 3000);
       return () => clearInterval(interval);
     }
   }, [user]);
