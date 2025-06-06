@@ -93,7 +93,7 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
 
       if (error) throw error;
       
-      // تحويل البيانات للنوع المطلوب
+      // تحويل البيانات للنوع المطلوب مع معالجة نوع status
       const formattedMessages: Message[] = (data || []).map(msg => ({
         id: msg.id,
         conversation_id: msg.conversation_id,

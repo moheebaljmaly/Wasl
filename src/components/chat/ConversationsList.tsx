@@ -61,7 +61,7 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
             .eq('id', otherParticipantId)
             .single();
 
-          // جلب آخر رسالة
+          // جلب آخر رسالة مع جميع الحقول المطلوبة
           const { data: lastMessageData } = await supabase
             .from('messages')
             .select('id, content, created_at, sender_id, conversation_id, status, is_offline')
