@@ -61,10 +61,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateProfile(id: string, updates: Partial<Profile>): Promise<Profile | undefined> {
+    console.log('Storage: Updating profile', { id, updates: { ...updates, avatar_url: updates.avatar_url ? 'has_data' : 'no_data' } });
+    
     const result = await db.update(profiles)
       .set({ ...updates, updated_at: new Date() })
       .where(eq(profiles.id, id))
       .returning();
+    
+    console.log('Storage: Update result', { updated: !!result[0], has_avatar: !!result[0]?.avatar_url });
     return result[0];
   }
 

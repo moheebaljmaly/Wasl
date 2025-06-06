@@ -302,17 +302,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatar_url: z.string().optional()
       }).parse(req.body);
 
+      console.log('Update request received:', { full_name, avatar_url: avatar_url ? 'image_data_received' : 'no_image' });
+
       const updates: any = {};
       if (full_name !== undefined) updates.full_name = full_name;
       if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+
+      console.log('Updates to apply:', updates);
 
       const updatedProfile = await storage.updateProfile(req.user.id, updates);
       if (!updatedProfile) {
         return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
+      console.log('Profile updated successfully:', { id: updatedProfile.id, full_name: updatedProfile.full_name, has_avatar: !!updatedProfile.avatar_url });
+
       res.json({ ...updatedProfile, password: undefined });
     } catch (error) {
+      console.error('Error updating profile:', error);
       res.status(400).json({ error: error instanceof Error ? error.message : "فشل تحديث الملف الشخصي" });
     }
   });

@@ -128,12 +128,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       }
 
       if (Object.keys(updates).length > 0) {
-        await apiClient.updateProfile(updates);
-        // إعادة تحميل الصفحة لضمان ظهور التحديثات للجميع
-        window.location.reload();
+        const updatedUser = await apiClient.updateProfile(updates);
+        
         toast({
           title: "تم تحديث الملف الشخصي",
           description: "تم حفظ التغييرات بنجاح",
+        });
+        
+        // إعادة تحميل الصفحة لضمان ظهور التحديثات للجميع
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        toast({
+          title: "لا توجد تغييرات",
+          description: "لم يتم إجراء أي تعديلات",
         });
       }
     } catch (error) {
@@ -207,21 +216,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="fullName">الاسم الكامل</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="اسمك الكامل"
-                className="text-right"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">الاسم الكامل</Label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="اسمك الكامل"
+                  className="text-right"
+                />
+              </div>
+              
               <Button 
                 onClick={handleUpdateProfile} 
-                disabled={loading || (!fullName.trim() && !avatarUrl)}
-                size="sm"
+                disabled={loading || (fullName.trim() === (user?.full_name || '') && avatarUrl === (user?.avatar_url || ''))}
+                className="w-full"
               >
-                {loading ? "جاري الحفظ..." : "حفظ"}
+                {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
               </Button>
             </div>
           </div>
