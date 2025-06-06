@@ -178,18 +178,19 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
                   onClick={() => createOrGetConversation(profile)}
                 >
                   <Avatar>
-                    <AvatarImage src={profile.avatar_url || ''} />
+                    <AvatarImage src={profile.avatar_url ?? undefined} />
                     <AvatarFallback>
-                      {profile.full_name?.split(' ').map(n => n[0]).join('') || '؟'}
+                      {profile.full_name?.split(' ').map(n => n[0]).join('') || 
+                       profile.username?.[0]?.toUpperCase() || '؟'}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">
-                      {profile.full_name || 'مستخدم غير معروف'}
+                      {profile.full_name || profile.username || 'مستخدم غير معروف'}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      ID: {profile.id.slice(0, 8)}...
+                      @{profile.username}
                     </p>
                   </div>
 

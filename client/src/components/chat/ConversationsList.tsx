@@ -27,6 +27,9 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
   useEffect(() => {
     if (user) {
       fetchConversations();
+      // تحديث المحادثات كل 5 ثوانِ للتأكد من عرض الرسائل الجديدة
+      const interval = setInterval(fetchConversations, 5000);
+      return () => clearInterval(interval);
     }
   }, [user]);
 
@@ -103,16 +106,17 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
             >
               <div className="flex items-center space-x-3 space-x-reverse">
                 <Avatar>
-                  <AvatarImage src={conversation.other_participant?.avatar_url || ''} />
+                  <AvatarImage src={conversation.other_participant?.avatar_url ?? undefined} />
                   <AvatarFallback>
-                    {conversation.other_participant?.full_name?.split(' ').map(n => n[0]).join('') || '؟'}
+                    {conversation.other_participant?.full_name?.split(' ').map(n => n[0]).join('') || 
+                     conversation.other_participant?.username?.[0]?.toUpperCase() || '؟'}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium text-gray-900 truncate">
-                      {conversation.other_participant?.full_name || 'مستخدم غير معروف'}
+                      {conversation.other_participant?.full_name || conversation.other_participant?.username || 'مستخدم غير معروف'}
                     </h3>
                     {conversation.last_message && (
                       <span className="text-xs text-gray-500">

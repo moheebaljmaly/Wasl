@@ -155,15 +155,16 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
           </Button>
           
           <Avatar>
-            <AvatarImage src={conversation.other_participant?.avatar_url || ''} />
+            <AvatarImage src={conversation.other_participant?.avatar_url ?? undefined} />
             <AvatarFallback>
-              {conversation.other_participant?.full_name?.split(' ').map(n => n[0]).join('') || '؟'}
+              {conversation.other_participant?.full_name?.split(' ').map(n => n[0]).join('') || 
+               conversation.other_participant?.username?.[0]?.toUpperCase() || '؟'}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1">
             <h2 className="font-medium text-gray-900">
-              {conversation.other_participant?.full_name || 'مستخدم غير معروف'}
+              {conversation.other_participant?.full_name || conversation.other_participant?.username || 'مستخدم غير معروف'}
             </h2>
             <div className="flex items-center space-x-2 space-x-reverse">
               {isOnline ? (
