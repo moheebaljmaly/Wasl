@@ -96,6 +96,13 @@ class ApiClient {
   async searchProfile(username: string): Promise<User> {
     return this.request<User>(`/profiles/search?username=${encodeURIComponent(username)}`);
   }
+
+  async updateProfile(updates: { full_name?: string; avatar_url?: string }): Promise<User> {
+    return this.request<User>('/profiles/me', {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

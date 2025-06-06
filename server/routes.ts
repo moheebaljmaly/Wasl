@@ -294,6 +294,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update profile route
+  app.patch("/api/profiles/me", authenticateToken, async (req: any, res) => {
+    try {
+      const { full_name, avatar_url } = z.object({
+        full_name: z.string().optional(),
+        avatar_url: z.string().optional()
+      }).parse(req.body);
+
+      const updates: any = {};
+      if (full_name !== undefined) updates.full_name = full_name;
+      if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+
+      const updatedProfile = await storage.updateProfile(req.user.id, updates);
+      if (!updatedProfile) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      res.json({ ...updatedProfile, password: undefined });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "فشل تحديث الملف الشخصي" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
