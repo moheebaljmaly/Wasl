@@ -82,7 +82,7 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
     setLoading(true);
 
     try {
-      const conversation = await apiClient.createConversation(otherUser.email);
+      const conversation = await apiClient.createConversation(otherUser.username);
       onConversationCreated(conversation);
       onOpenChange(false);
       setSearchTerm('');
@@ -120,7 +120,7 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
           <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="البحث بالاسم أو البريد الإلكتروني..."
+              placeholder="البحث بـ اسم المستخدم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pr-10 text-right"

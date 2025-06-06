@@ -74,12 +74,13 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <Avatar className="h-16 w-16">
                 <AvatarImage src="" />
                 <AvatarFallback>
-                  {user?.email?.split('@')[0][0].toUpperCase() || '؟'}
+                  {user?.username?.[0]?.toUpperCase() || user?.email?.split('@')[0][0]?.toUpperCase() || '؟'}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <p className="text-sm font-medium">{user?.email}</p>
-                <p className="text-xs text-gray-500">البريد الإلكتروني</p>
+              <div className="flex-1 space-y-1">
+                <p className="text-sm font-medium">{user?.username}</p>
+                <p className="text-xs text-gray-500">اسم المستخدم</p>
+                <p className="text-xs text-gray-400">{user?.email}</p>
               </div>
             </div>
 
