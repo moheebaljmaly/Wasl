@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { Send, ArrowRight, Wifi, WifiOff, MoreVertical } from 'lucide-react';
+import { Send, ArrowRight, Wifi, WifiOff, MoreVertical, Trash2, UserX } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Conversation, Message } from '@/types';
@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { ProfileDialog } from './ProfileDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface ChatAreaProps {
   conversation: Conversation | null;
@@ -21,6 +22,7 @@ interface ChatAreaProps {
 export function ChatArea({ conversation, onBack }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -163,8 +165,8 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
             </AvatarFallback>
           </Avatar>
           
-          <div className="flex-1">
-            <h2 className="font-medium text-gray-900">
+          <div className="flex-1 cursor-pointer" onClick={() => setShowProfileDialog(true)}>
+            <h2 className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
               {conversation.other_participant?.full_name || conversation.other_participant?.username || 'مستخدم غير معروف'}
             </h2>
             <div className="flex items-center space-x-2 space-x-reverse">
@@ -178,6 +180,25 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
               </span>
             </div>
           </div>
+
+          {/* قائمة الخيارات */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="text-red-600 cursor-pointer">
+                <UserX className="h-4 w-4 mr-2" />
+                حظر المستخدم
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600 cursor-pointer">
+                <Trash2 className="h-4 w-4 mr-2" />
+                حذف المحادثة
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -241,6 +262,13 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
           </Button>
         </form>
       </div>
+
+      {/* Profile Dialog */}
+      <ProfileDialog 
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+        profile={conversation?.other_participant || null}
+      />
     </div>
   );
 }
