@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Send, ArrowRight, Wifi, WifiOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Conversation, Message } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -56,7 +56,6 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
   useEffect(() => {
     if (conversation) {
       fetchMessages();
-      subscribeToMessages();
     }
   }, [conversation]);
 
@@ -72,86 +71,15 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
     if (!conversation) return;
 
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          id,
-          conversation_id,
-          sender_id,
-          content,
-          status,
-          is_offline,
-          created_at,
-          sender:profiles(
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      
-      // تحويل البيانات للنوع المطلوب مع معالجة نوع status
-      const formattedMessages: Message[] = (data || []).map(msg => ({
-        id: msg.id,
-        conversation_id: msg.conversation_id,
-        sender_id: msg.sender_id,
-        content: msg.content,
-        status: msg.status as 'sending' | 'sent' | 'failed' | 'delivered',
-        is_offline: msg.is_offline,
-        created_at: msg.created_at,
-        sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender
-      }));
-      
-      setMessages(formattedMessages);
+      const messagesData = await apiClient.getMessages(conversation.id);
+      setMessages(messagesData);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
   };
 
-  const subscribeToMessages = () => {
-    if (!conversation) return;
-
-    const channel = supabase
-      .channel('messages-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversation.id}`
-        },
-        async (payload) => {
-          // جلب بيانات المرسل
-          const { data: sender } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', payload.new.sender_id)
-            .single();
-
-          const newMessage: Message = {
-            id: payload.new.id,
-            conversation_id: payload.new.conversation_id,
-            sender_id: payload.new.sender_id,
-            content: payload.new.content,
-            status: payload.new.status as 'sending' | 'sent' | 'failed' | 'delivered',
-            is_offline: payload.new.is_offline,
-            created_at: payload.new.created_at,
-            sender
-          };
-
-          setMessages(prev => [...prev, newMessage]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
+  // Real-time functionality can be added later with WebSockets if needed
+  // For now, we'll rely on periodic refresh or manual refresh
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,16 +113,13 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: user.id,
-          content: messageContent,
-          status: 'sent'
-        });
+      const sentMessage = await apiClient.sendMessage(conversation.id, messageContent, {
+        status: 'sent',
+        is_offline: false
+      });
 
-      if (error) throw error;
+      // Add the sent message to the local state
+      setMessages(prev => [...prev, sentMessage]);
 
     } catch (error) {
       console.error('Error sending message:', error);

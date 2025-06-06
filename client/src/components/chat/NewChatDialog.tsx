@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, MessageCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Profile, Conversation } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -42,21 +42,8 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
 
     try {
       setSearchLoading(true);
-      console.log('جلب جميع المستخدمين...');
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', user.id)
-        .order('full_name');
-
-      if (error) {
-        console.error('خطأ في جلب المستخدمين:', error);
-        throw error;
-      }
-
-      console.log('تم جلب المستخدمين:', data);
-      setUsers(data || []);
+      // For now, we'll skip loading all users and only show search functionality
+      setUsers([]);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -72,32 +59,23 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
   const searchUsers = async () => {
     if (!user || !searchTerm.trim()) return;
 
+    // Check if search term is a valid email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(searchTerm)) {
+      setUsers([]);
+      return;
+    }
+
     try {
       setSearchLoading(true);
-      console.log('البحث عن المستخدمين بالكلمة:', searchTerm);
-      
-      // البحث في الاسم الكامل أو البريد الإلكتروني
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', user.id)
-        .or(`full_name.ilike.%${searchTerm}%`)
-        .order('full_name');
-
-      if (profilesError) {
-        console.error('خطأ في البحث في profiles:', profilesError);
-        throw profilesError;
-      }
-
-      // البحث في جدول auth.users للبريد الإلكتروني (إذا كان متاحاً)
-      // نظراً لأن auth.users غير متاح مباشرة، سنبحث فقط في profiles
-      console.log('نتائج البحث:', profilesData);
-      setUsers(profilesData || []);
+      const profile = await apiClient.searchProfile(searchTerm);
+      setUsers([profile]);
     } catch (error) {
       console.error('Error searching users:', error);
+      setUsers([]);
       toast({
-        title: "خطأ في البحث",
-        description: "حاول مرة أخرى",
+        title: "المستخدم غير موجود",
+        description: "تأكد من البريد الإلكتروني",
         variant: "destructive",
       });
     } finally {
