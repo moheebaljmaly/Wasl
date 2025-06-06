@@ -69,7 +69,7 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
     try {
       setSearchLoading(true);
       const profile = await apiClient.searchProfile(searchTerm);
-      setUsers([profile]);
+      setUsers([profile as Profile]);
     } catch (error) {
       console.error('Error searching users:', error);
       setUsers([]);
@@ -83,71 +83,14 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
     }
   };
 
-  const createOrGetConversation = async (otherUserId: string) => {
+  const createOrGetConversation = async (otherUser: Profile) => {
     if (!user) return;
 
     setLoading(true);
 
     try {
-      console.log('إنشاء أو البحث عن محادثة مع المستخدم:', otherUserId);
-      
-      // البحث عن محادثة موجودة
-      const { data: existingConversation, error: searchError } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`and(participant_1.eq.${user.id},participant_2.eq.${otherUserId}),and(participant_1.eq.${otherUserId},participant_2.eq.${user.id})`)
-        .single();
-
-      if (searchError && searchError.code !== 'PGRST116') {
-        console.error('خطأ في البحث عن المحادثة:', searchError);
-        throw searchError;
-      }
-
-      let conversation;
-
-      if (existingConversation) {
-        console.log('تم العثور على محادثة موجودة:', existingConversation);
-        conversation = existingConversation;
-      } else {
-        console.log('إنشاء محادثة جديدة...');
-        // إنشاء محادثة جديدة
-        const { data: newConversation, error: createError } = await supabase
-          .from('conversations')
-          .insert({
-            participant_1: user.id,
-            participant_2: otherUserId
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('خطأ في إنشاء المحادثة:', createError);
-          throw createError;
-        }
-        
-        console.log('تم إنشاء محادثة جديدة:', newConversation);
-        conversation = newConversation;
-      }
-
-      // إضافة بيانات المشارك الآخر
-      const { data: otherUser, error: userError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', otherUserId)
-        .single();
-
-      if (userError) {
-        console.error('خطأ في جلب بيانات المستخدم:', userError);
-        throw userError;
-      }
-
-      const conversationWithDetails = {
-        ...conversation,
-        other_participant: otherUser
-      };
-
-      console.log('المحادثة النهائية:', conversationWithDetails);
-      onConversationCreated(conversationWithDetails);
+      const conversation = await apiClient.createConversation(otherUser.email);
+      onConversationCreated(conversation);
       onOpenChange(false);
       setSearchTerm('');
       
@@ -207,7 +150,7 @@ export function NewChatDialog({ open, onOpenChange, onConversationCreated }: New
                 <div
                   key={profile.id}
                   className="flex items-center space-x-3 space-x-reverse p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => createOrGetConversation(profile.id)}
+                  onClick={() => createOrGetConversation(profile)}
                 >
                   <Avatar>
                     <AvatarImage src={profile.avatar_url || ''} />

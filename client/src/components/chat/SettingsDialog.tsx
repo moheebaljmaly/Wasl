@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Settings, User, Bell, Moon, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface SettingsDialogProps {
