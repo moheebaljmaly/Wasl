@@ -1,4 +1,3 @@
-
 workflows:
   react-native-android:
     name: Build React Native Android App
@@ -8,7 +7,6 @@ workflows:
         JAVA_HOME: /usr/lib/jvm/java-11-openjdk
       node: 16.20.0
       npm: 8.19.4
-      android: true
     scripts:
       - name: Install dependencies
         script: |
