@@ -3,8 +3,6 @@ workflows:
     name: Build React Native Android App
     max_build_duration: 30
     environment:
-      vars:
-        JAVA_HOME: /usr/lib/jvm/java-11-openjdk
       node: 16.20.0
       npm: 8.19.4
     scripts:
