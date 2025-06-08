@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, User, Bell, Moon, LogOut, Camera } from 'lucide-react';
+import { Settings, User, Bell, Moon, LogOut, Camera, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -24,10 +23,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [showAvatarEditor, setShowAvatarEditor] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, signOut, refreshUser } = useAuth();
 
-  // Update fullName and avatarUrl when user data changes
   useEffect(() => {
     if (user?.full_name) {
       setFullName(user.full_name);
@@ -36,6 +36,33 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       setAvatarUrl(user.avatar_url);
     }
   }, [user]);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "حجم الملف كبير جداً",
+        description: "يرجى اختيار صورة أصغر من 5 ميجابايت",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setAvatarUrl(result);
+      setUploading(false);
+      toast({
+        title: "تم رفع الصورة",
+        description: "لا تنس حفظ التغييرات",
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleAvatarSave = (imageData: string) => {
     setAvatarUrl(imageData);
@@ -50,38 +77,22 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
     setLoading(true);
     try {
-      const updates: any = {};
-      if (fullName.trim() !== user.full_name) {
-        updates.full_name = fullName.trim();
-      }
-      if (avatarUrl !== user.avatar_url) {
-        updates.avatar_url = avatarUrl;
-      }
-
-      if (Object.keys(updates).length > 0) {
-        const updatedUser = await apiClient.updateProfile(updates);
-        
-        toast({
-          title: "تم تحديث الملف الشخصي",
-          description: "تم حفظ التغييرات بنجاح",
-        });
-        
-        // إعادة تحميل الصفحة لضمان ظهور التحديثات للجميع
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        toast({
-          title: "لا توجد تغييرات",
-          description: "لم يتم إجراء أي تعديلات",
-        });
-      }
+      await apiClient.updateProfile({
+        full_name: fullName,
+        avatar_url: avatarUrl
+      });
+      
+      await refreshUser();
+      
+      toast({
+        title: "تم تحديث الملف الشخصي",
+        description: "تم حفظ التغييرات بنجاح"
+      });
     } catch (error) {
-      console.error('Error updating profile:', error);
       toast({
         title: "خطأ في التحديث",
-        description: "حاول مرة أخرى",
-        variant: "destructive",
+        description: "حدث خطأ أثناء حفظ التغييرات",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -89,35 +100,39 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   };
 
   const handleSignOut = async () => {
-    await signOut();
     onOpenChange(false);
+    await signOut();
+  };
+
+  const getUserInitials = (name?: string | null, username?: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return username?.slice(0, 2).toUpperCase() || 'U';
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2 space-x-reverse">
-            <Settings className="h-5 w-5" />
-            <span>الإعدادات</span>
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              الإعدادات
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* قسم الحساب */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <User className="h-4 w-4" />
-              <h3 className="font-medium">الحساب</h3>
-            </div>
-
-            <div className="flex items-center space-x-4 space-x-reverse">
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
               <div className="relative">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={avatarUrl || (user?.avatar_url ?? undefined)} />
-                  <AvatarFallback>
-                    {user?.username?.[0]?.toUpperCase() || user?.email?.split('@')[0][0]?.toUpperCase() || '؟'}
-                  </AvatarFallback>
+                  {avatarUrl ? (
+                    <AvatarImage src={avatarUrl} alt="الصورة الشخصية" />
+                  ) : (
+                    <AvatarFallback className="text-lg">
+                      {getUserInitials(user?.full_name, user?.username)}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <Button
                   size="sm"
@@ -158,61 +173,69 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   className="text-right"
                 />
               </div>
-              
-              <Button 
-                onClick={handleUpdateProfile} 
-                disabled={loading || (fullName.trim() === (user?.full_name || '') && avatarUrl === (user?.avatar_url || ''))}
-                className="w-full"
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Bell className="h-4 w-4" />
+                    الإشعارات
+                  </p>
+                  <p className="text-xs text-gray-500">تلقي إشعارات الرسائل الجديدة</p>
+                </div>
+                <Switch
+                  checked={notifications}
+                  onCheckedChange={setNotifications}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Moon className="h-4 w-4" />
+                    الوضع المظلم
+                  </p>
+                  <p className="text-xs text-gray-500">تشغيل الثيم المظلم</p>
+                </div>
+                <Switch
+                  checked={darkMode}
+                  onCheckedChange={setDarkMode}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleUpdateProfile}
+                disabled={loading}
+                className="flex-1"
               >
                 {loading ? "جاري الحفظ..." : "حفظ التغييرات"}
               </Button>
+              <Button
+                variant="outline"
+                onClick={handleSignOut}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                تسجيل الخروج
+              </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
 
-          <Separator />
-
-          {/* قسم التفضيلات */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <Bell className="h-4 w-4" />
-              <h3 className="font-medium">التفضيلات</h3>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="notifications">الإشعارات</Label>
-              <Switch
-                id="notifications"
-                checked={notifications}
-                onCheckedChange={setNotifications}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <Moon className="h-4 w-4" />
-                <Label htmlFor="darkMode">الوضع الليلي</Label>
-              </div>
-              <Switch
-                id="darkMode"
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* تسجيل الخروج */}
-          <Button 
-            variant="destructive" 
-            onClick={handleSignOut}
-            className="w-full"
-          >
-            <LogOut className="h-4 w-4 ml-2" />
-            تسجيل الخروج
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <AvatarEditor
+        open={showAvatarEditor}
+        onOpenChange={setShowAvatarEditor}
+        onSave={handleAvatarSave}
+        currentAvatar={avatarUrl}
+      />
+    </>
   );
 }
