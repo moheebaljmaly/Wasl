@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings, User, Bell, Moon, LogOut, Camera, Upload } from 'lucide-react';
+import { Settings, User, Bell, Moon, LogOut, Camera } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { AvatarEditor } from './AvatarEditor';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -23,8 +24,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
   const { user, signOut, refreshUser } = useAuth();
 
   // Update fullName and avatarUrl when user data changes
@@ -61,7 +61,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       return;
     }
 
-    setUploading(true);
+    setLoading(true);
 
     // ضغط الصورة قبل الرفع
     const canvas = document.createElement('canvas');
@@ -94,7 +94,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       // تحويل إلى base64 مع جودة مضغوطة
       const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
       setAvatarUrl(compressedBase64);
-      setUploading(false);
+      setLoading(false);
     };
     
     img.onerror = () => {
@@ -103,7 +103,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         description: "حاول مرة أخرى",
         variant: "destructive",
       });
-      setUploading(false);
+      setLoading(false);
     };
     
     // قراءة الملف كـ URL للصورة

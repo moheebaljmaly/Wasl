@@ -235,7 +235,7 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
             }}
             onDelete={async (messageId) => {
               try {
-                await apiClient.request(`/messages/${messageId}`, { method: 'DELETE' });
+                await apiClient.deleteMessage(messageId);
                 setMessages(prev => prev.map(m => 
                   m.id === messageId ? { ...m, is_deleted: true } : m
                 ));
