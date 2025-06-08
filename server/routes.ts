@@ -70,8 +70,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token,
         session: { access_token: token, user: { ...user, password: undefined } }
       });
-    } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : "Signup failed" });
+    } catch (error: any) {
+      let errorMessage = "فشل في إنشاء الحساب";
+      
+      if (error.message) {
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          if (error.message.includes('email')) {
+            errorMessage = "هذا البريد الإلكتروني مستخدم بالفعل";
+          } else if (error.message.includes('username')) {
+            errorMessage = "اسم المستخدم مستخدم بالفعل";
+          } else {
+            errorMessage = "البيانات مستخدمة بالفعل";
+          }
+        } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+          errorMessage = "خطأ في قاعدة البيانات - يرجى المحاولة مرة أخرى";
+        } else if (error.message.includes('validation')) {
+          errorMessage = "البيانات المدخلة غير صحيحة";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      res.status(400).json({ error: errorMessage });
     }
   });
 
@@ -85,13 +105,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user
       const user = await storage.getProfileByEmail(email);
       if (!user) {
-        return res.status(400).json({ error: "Invalid credentials" });
+        return res.status(400).json({ error: "بريد إلكتروني أو كلمة مرور خاطئة" });
       }
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return res.status(400).json({ error: "Invalid credentials" });
+        return res.status(400).json({ error: "بريد إلكتروني أو كلمة مرور خاطئة" });
       }
 
       // Generate JWT token
@@ -102,8 +122,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token,
         session: { access_token: token, user: { ...user, password: undefined } }
       });
-    } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : "Signin failed" });
+    } catch (error: any) {
+      let errorMessage = "فشل في تسجيل الدخول";
+      
+      if (error.message) {
+        if (error.message.includes('validation')) {
+          errorMessage = "البيانات المدخلة غير صحيحة";
+        } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+          errorMessage = "خطأ في قاعدة البيانات - يرجى المحاولة مرة أخرى";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      res.status(400).json({ error: errorMessage });
     }
   });
 
