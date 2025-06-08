@@ -5,6 +5,9 @@ export interface User {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  is_online?: boolean;
+  last_seen?: string;
+  is_blocked?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -15,6 +18,9 @@ export interface Profile {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  is_online?: boolean;
+  last_seen?: string;
+  is_blocked?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +43,9 @@ export interface Message {
   content: string;
   status: 'sending' | 'sent' | 'failed' | 'delivered';
   is_offline: boolean;
+  is_read?: boolean;
+  reply_to_id?: string;
+  is_deleted?: boolean;
   created_at: string;
   sender?: Profile;
 }

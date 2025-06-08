@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,5 +101,40 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Cairo', sans-serif;
+    direction: rtl;
+  }
+  
+  * {
+    font-family: 'Cairo', sans-serif;
+  }
+  
+  /* RTL Support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+  
+  /* Chat bubble styles */
+  .message-sent {
+    @apply bg-blue-500 text-white ml-auto rounded-l-2xl rounded-tr-2xl rounded-br-sm;
+  }
+  
+  .message-received {
+    @apply bg-gray-200 dark:bg-gray-700 mr-auto rounded-r-2xl rounded-tl-2xl rounded-bl-sm;
+  }
+  
+  /* Swipe gesture support */
+  .swipe-reply {
+    transition: transform 0.2s ease-out;
+  }
+  
+  /* Online status indicator */
+  .online-indicator {
+    @apply absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full;
+  }
+  
+  /* Message selection */
+  .message-selected {
+    @apply bg-blue-100 dark:bg-blue-900/30;
   }
 }

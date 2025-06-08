@@ -40,9 +40,12 @@ export function ChatLayout() {
       <div className={`w-full md:w-80 bg-white border-l ${showMobileChat ? 'hidden md:block' : 'block'}`}>
         <div className="h-full flex flex-col">
           {/* رأس الصفحة */}
-          <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-            <h1 className="text-xl font-bold">وصل</h1>
-            <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
+          <div className="p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-between">
+            <div className="flex flex-col">
+              <h1 className="text-2xl font-bold text-white">وصل</h1>
+              <p className="text-sm text-blue-100">Wasl</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)} className="text-white hover:bg-white/20">
               <Settings className="h-4 w-4" />
             </Button>
           </div>

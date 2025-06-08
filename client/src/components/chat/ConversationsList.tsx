@@ -67,8 +67,9 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
       <div className="p-4 border-b bg-white">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold">المحادثات</h1>
-          <Button onClick={onNewChat} size="sm" className="rounded-full">
-            <Plus className="h-4 w-4" />
+          <Button onClick={onNewChat} size="sm" className="rounded-full bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 ml-1" />
+            محادثة جديدة
           </Button>
         </div>
         
@@ -105,13 +106,19 @@ export function ConversationsList({ onSelectConversation, onNewChat, selectedCon
               onClick={() => onSelectConversation(conversation)}
             >
               <div className="flex items-center space-x-3 space-x-reverse">
-                <Avatar>
-                  <AvatarImage src={conversation.other_participant?.avatar_url ?? undefined} />
-                  <AvatarFallback>
-                    {conversation.other_participant?.full_name?.split(' ').map(n => n[0]).join('') || 
-                     conversation.other_participant?.username?.[0]?.toUpperCase() || '؟'}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar>
+                    <AvatarImage src={conversation.other_participant?.avatar_url ?? undefined} />
+                    <AvatarFallback>
+                      {conversation.other_participant?.full_name?.split(' ').map(n => n[0]).join('') || 
+                       conversation.other_participant?.username?.[0]?.toUpperCase() || '؟'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* مؤشر الاتصال */}
+                  {conversation.other_participant?.is_online && (
+                    <div className="online-indicator"></div>
+                  )}
+                </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
