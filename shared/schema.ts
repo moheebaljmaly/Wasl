@@ -11,6 +11,9 @@ export const profiles = pgTable("profiles", {
   password: text("password").notNull(),
   full_name: text("full_name"),
   avatar_url: text("avatar_url"),
+  is_online: boolean("is_online").default(false).notNull(),
+  last_seen: timestamp("last_seen").defaultNow().notNull(),
+  is_blocked: boolean("is_blocked").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -24,15 +27,17 @@ export const conversations = pgTable("conversations", {
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Messages table
+// Messages table (declare first to avoid circular reference)
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversation_id: uuid("conversation_id").notNull().references(() => conversations.id),
-  sender_id: uuid("sender_id").notNull().references(() => profiles.id),
+  conversation_id: uuid("conversation_id").notNull(),
+  sender_id: uuid("sender_id").notNull(),
   content: text("content").notNull(),
   status: text("status").notNull().default("sent"), // 'sending' | 'sent' | 'failed' | 'delivered'
   is_offline: boolean("is_offline").default(false).notNull(),
   is_read: boolean("is_read").default(false).notNull(),
+  reply_to_id: uuid("reply_to_id"),
+  is_deleted: boolean("is_deleted").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -65,6 +70,10 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   sender: one(profiles, {
     fields: [messages.sender_id],
     references: [profiles.id],
+  }),
+  replyTo: one(messages, {
+    fields: [messages.reply_to_id],
+    references: [messages.id],
   }),
 }));
 
