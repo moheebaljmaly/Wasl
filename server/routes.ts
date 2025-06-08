@@ -309,25 +309,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatar_url: z.string().optional()
       }).parse(req.body);
 
-      console.log('Update request received:', { full_name, avatar_url: avatar_url ? 'image_data_received' : 'no_image' });
-
       const updates: any = {};
       if (full_name !== undefined) updates.full_name = full_name;
       if (avatar_url !== undefined) updates.avatar_url = avatar_url;
-
-      console.log('Updates to apply:', updates);
 
       const updatedProfile = await storage.updateProfile(req.user.id, updates);
       if (!updatedProfile) {
         return res.status(404).json({ error: "المستخدم غير موجود" });
       }
 
-      console.log('Profile updated successfully:', { id: updatedProfile.id, full_name: updatedProfile.full_name, has_avatar: !!updatedProfile.avatar_url });
-
       res.json({ ...updatedProfile, password: undefined });
     } catch (error) {
-      console.error('Error updating profile:', error);
       res.status(400).json({ error: error instanceof Error ? error.message : "فشل تحديث الملف الشخصي" });
+    }
+  });
+
+  // Delete message route
+  app.delete("/api/messages/:messageId", authenticateToken, async (req: any, res) => {
+    try {
+      const { messageId } = req.params;
+      
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ error: "الرسالة غير موجودة" });
+      }
+
+      // Check if user is the sender
+      if (message.sender_id !== req.user.id) {
+        return res.status(403).json({ error: "لا يمكنك حذف هذه الرسالة" });
+      }
+
+      // Mark message as deleted
+      await storage.updateMessage(messageId, { is_deleted: true });
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "فشل حذف الرسالة" });
+    }
+  });
+
+  // Block user route
+  app.post("/api/profiles/:userId/block", authenticateToken, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      
+      if (userId === req.user.id) {
+        return res.status(400).json({ error: "لا يمكنك حظر نفسك" });
+      }
+
+      const userToBlock = await storage.getProfile(userId);
+      if (!userToBlock) {
+        return res.status(404).json({ error: "المستخدم غير موجود" });
+      }
+
+      // Update user's blocked status
+      await storage.updateProfile(userId, { is_blocked: true });
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "فشل حظر المستخدم" });
+    }
+  });
+
+  // Delete conversation route
+  app.delete("/api/conversations/:conversationId", authenticateToken, async (req: any, res) => {
+    try {
+      const { conversationId } = req.params;
+      
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "المحادثة غير موجودة" });
+      }
+
+      // Check if user is part of this conversation
+      if (conversation.participant_1 !== req.user.id && conversation.participant_2 !== req.user.id) {
+        return res.status(403).json({ error: "لا يمكنك حذف هذه المحادثة" });
+      }
+
+      // Mark all messages in conversation as deleted
+      const messages = await storage.getMessagesForConversation(conversationId);
+      await Promise.all(
+        messages.map(message => storage.updateMessage(message.id, { is_deleted: true }))
+      );
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "فشل حذف المحادثة" });
+    }
+  });
+
+  // Update online status
+  app.post("/api/profiles/me/online", authenticateToken, async (req: any, res) => {
+    try {
+      const { is_online } = z.object({
+        is_online: z.boolean()
+      }).parse(req.body);
+
+      await storage.updateProfile(req.user.id, { 
+        is_online,
+        last_seen: new Date()
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "فشل تحديث حالة الاتصال" });
     }
   });
 

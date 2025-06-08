@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { Send, ArrowRight, Wifi, WifiOff, MoreVertical, Trash2, UserX } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Send, ArrowRight, Wifi, WifiOff, MoreVertical, Trash2, UserX, Reply, X } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Conversation, Message } from '@/types';
@@ -12,6 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { ProfileDialog } from './ProfileDialog';
+import { MessageItem } from './MessageItem';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface ChatAreaProps {
@@ -25,6 +27,7 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
@@ -202,50 +205,69 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
         </div>
       </div>
 
+      {/* تنبيه عدم الاتصال */}
+      {!isOnline && (
+        <Alert className="mx-4 mt-4 bg-orange-50 border-orange-200">
+          <WifiOff className="h-4 w-4" />
+          <AlertDescription>
+            يجب الاتصال بالإنترنت لإرسال الرسائل. ستحفظ الرسائل محلياً حتى استعادة الاتصال.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* منطقة الرسائل */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((message) => (
-          <div
+          <MessageItem
             key={message.id}
-            className={`flex ${message.sender_id === user?.id ? 'justify-start' : 'justify-end'}`}
-          >
-            <Card
-              className={`max-w-xs lg:max-w-md p-3 ${
-                message.sender_id === user?.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900'
-              }`}
-            >
-              <p className="text-sm">{message.content}</p>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-xs opacity-70">
-                  {formatDistanceToNow(new Date(message.created_at), {
-                    addSuffix: true,
-                    locale: ar
-                  })}
-                </span>
-                {message.sender_id === user?.id && (
-                  <span className="text-xs opacity-70">
-                    {message.status === 'sending' && '⏳'}
-                    {message.status === 'sent' && '✓'}
-                    {message.status === 'delivered' && '✓✓'}
-                    {message.status === 'failed' && '❌'}
-                  </span>
-                )}
-              </div>
-            </Card>
-          </div>
+            message={message}
+            isOwn={message.sender_id === user?.id}
+            otherParticipant={conversation?.other_participant}
+            onReply={setReplyingTo}
+            onShare={(msg) => {
+              navigator.share?.({
+                text: msg.content,
+                title: 'رسالة من ' + (conversation?.other_participant?.full_name || 'وصل')
+              }).catch(() => {
+                navigator.clipboard.writeText(msg.content);
+                toast({ title: "تم نسخ الرسالة" });
+              });
+            }}
+            onDelete={async (messageId) => {
+              try {
+                await apiClient.request(`/messages/${messageId}`, { method: 'DELETE' });
+                setMessages(prev => prev.map(m => 
+                  m.id === messageId ? { ...m, is_deleted: true } : m
+                ));
+                toast({ title: "تم حذف الرسالة" });
+              } catch (error) {
+                toast({ title: "فشل حذف الرسالة", variant: "destructive" });
+              }
+            }}
+          />
         ))}
         <div ref={messagesEndRef} />
       </div>
 
       {/* منطقة الإدخال */}
       <div className="bg-white border-t p-4">
-        {!isOnline && (
-          <div className="mb-3 p-2 bg-orange-100 border border-orange-200 rounded-lg">
-            <p className="text-sm text-orange-800 text-center">
-              يجب الاتصال بالإنترنت لإرسال الرسائل
-            </p>
+        {/* مؤشر الرد */}
+        {replyingTo && (
+          <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Reply className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-blue-800">
+                رد على: {replyingTo.content.slice(0, 50)}...
+              </span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setReplyingTo(null)}
+              className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+            >
+              <X className="h-3 w-3" />
+            </Button>
           </div>
         )}
         
@@ -253,11 +275,11 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="اكتب رسالتك..."
+            placeholder={replyingTo ? "اكتب ردك..." : "اكتب رسالتك..."}
             className="flex-1 text-right"
-            disabled={loading}
+            disabled={loading || !isOnline}
           />
-          <Button type="submit" disabled={loading || !newMessage.trim()}>
+          <Button type="submit" disabled={loading || !newMessage.trim() || !isOnline}>
             <Send className="h-4 w-4" />
           </Button>
         </form>

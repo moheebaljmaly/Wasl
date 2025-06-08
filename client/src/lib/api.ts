@@ -103,6 +103,31 @@ class ApiClient {
       body: JSON.stringify(updates),
     });
   }
+
+  async deleteMessage(messageId: string): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/messages/${messageId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async blockUser(userId: string): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/profiles/${userId}/block`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteConversation(conversationId: string): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/conversations/${conversationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async updateOnlineStatus(isOnline: boolean): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>('/profiles/me/online', {
+      method: 'POST',
+      body: JSON.stringify({ is_online: isOnline }),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();
