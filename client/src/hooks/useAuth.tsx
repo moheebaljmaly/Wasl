@@ -86,9 +86,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setLoading(false);
       return { error: null };
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
-      const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
+      let errorMessage = 'فشل في تسجيل الدخول';
+      
+      if (error.message) {
+        if (error.message.includes('Invalid email or password')) {
+          errorMessage = 'بريد إلكتروني أو كلمة مرور خاطئة';
+        } else if (error.message.includes('User not found')) {
+          errorMessage = 'المستخدم غير موجود - يرجى إنشاء حساب جديد';
+        } else if (error.message.includes('connection')) {
+          errorMessage = 'مشكلة في الاتصال - يرجى التحقق من الإنترنت';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'انتهت مهلة الطلب - يرجى المحاولة مرة أخرى';
+        } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+          errorMessage = 'خطأ في قاعدة البيانات - يرجى المحاولة مرة أخرى';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "خطأ في تسجيل الدخول",
         description: errorMessage,
@@ -114,9 +131,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "مرحباً بك! تم إنشاء حسابك بنجاح",
       });
       return { error: null };
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
-      const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
+      let errorMessage = 'فشل في إنشاء الحساب';
+      
+      if (error.message) {
+        if (error.message.includes('duplicate key value violates unique constraint')) {
+          if (error.message.includes('email')) {
+            errorMessage = 'هذا البريد الإلكتروني مستخدم بالفعل';
+          } else if (error.message.includes('username')) {
+            errorMessage = 'اسم المستخدم مستخدم بالفعل';
+          } else {
+            errorMessage = 'البيانات مستخدمة بالفعل';
+          }
+        } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+          errorMessage = 'خطأ في قاعدة البيانات - يرجى المحاولة مرة أخرى';
+        } else if (error.message.includes('connection')) {
+          errorMessage = 'مشكلة في الاتصال - يرجى التحقق من الإنترنت';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'انتهت مهلة الطلب - يرجى المحاولة مرة أخرى';
+        } else if (error.message.includes('password')) {
+          errorMessage = 'كلمة المرور يجب أن تكون على الأقل 6 أحرف';
+        } else if (error.message.includes('email')) {
+          errorMessage = 'يرجى إدخال بريد إلكتروني صحيح';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "خطأ في التسجيل",
         description: errorMessage,
