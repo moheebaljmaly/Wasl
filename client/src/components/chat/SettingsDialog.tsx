@@ -37,81 +37,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     }
   }, [user]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "نوع ملف غير صحيح",
-        description: "يرجى اختيار صورة",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "الملف كبير جداً",
-        description: "حجم الصورة يجب أن يكون أقل من 5 ميجابايت",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-
-    // ضغط الصورة قبل الرفع
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    img.onload = () => {
-      // تحديد أبعاد الصورة المضغوطة
-      const maxSize = 300;
-      let { width, height } = img;
-      
-      if (width > height) {
-        if (width > maxSize) {
-          height = (height * maxSize) / width;
-          width = maxSize;
-        }
-      } else {
-        if (height > maxSize) {
-          width = (width * maxSize) / height;
-          height = maxSize;
-        }
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      // رسم الصورة المضغوطة
-      ctx?.drawImage(img, 0, 0, width, height);
-      
-      // تحويل إلى base64 مع جودة مضغوطة
-      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-      setAvatarUrl(compressedBase64);
-      setLoading(false);
-    };
-    
-    img.onerror = () => {
-      toast({
-        title: "خطأ في معالجة الصورة",
-        description: "حاول مرة أخرى",
-        variant: "destructive",
-      });
-      setLoading(false);
-    };
-    
-    // قراءة الملف كـ URL للصورة
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+  const handleAvatarSave = (imageData: string) => {
+    setAvatarUrl(imageData);
+    toast({
+      title: "تم تحديث الصورة الشخصية",
+      description: "لا تنس حفظ التغييرات",
+    });
   };
 
   const handleUpdateProfile = async () => {
