@@ -1,1 +1,21 @@
 
+workflows:
+  react-native-android:
+    name: Build React Native Android App
+    max_build_duration: 30
+    environment:
+      vars:
+        JAVA_HOME: /usr/lib/jvm/java-11-openjdk
+      node: 16.20.0
+      npm: 8.19.4
+      android: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+      - name: Build Android APK
+        script: |
+          cd android
+          ./gradlew assembleRelease
+    artifacts:
+      - android/app/build/outputs/apk/release/app-release.apk
