@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,10 +15,45 @@ export function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { signIn, signUp, loading } = useAuth();
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!isLogin) {
+      if (!fullName.trim()) {
+        newErrors.fullName = 'الاسم الكامل مطلوب';
+      }
+      if (!username.trim()) {
+        newErrors.username = 'اسم المستخدم مطلوب';
+      } else if (username.length < 3) {
+        newErrors.username = 'اسم المستخدم يجب أن يكون على الأقل 3 أحرف';
+      }
+    }
+    
+    if (!email.trim()) {
+      newErrors.email = 'البريد الإلكتروني مطلوب';
+    }
+    
+    if (!password.trim()) {
+      newErrors.password = 'كلمة المرور مطلوبة';
+    } else if (password.length < 6) {
+      newErrors.password = 'كلمة المرور يجب أن تكون على الأقل 6 أحرف';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     const { error } = await signIn(email, password, rememberMe);
     if (!error) {
       // سيتم التوجه تلقائياً عبر useAuth
@@ -28,6 +62,12 @@ export function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     const { error } = await signUp(email, username, password, fullName);
     if (!error) {
       setIsLogin(true);
@@ -66,6 +106,7 @@ export function AuthPage() {
                     className="text-right"
                     placeholder="example@email.com"
                   />
+                  {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">كلمة المرور</Label>
@@ -78,6 +119,7 @@ export function AuthPage() {
                     className="text-right"
                     placeholder="••••••••"
                   />
+                  {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
                 </div>
                 <div className="flex items-center space-x-2 space-x-reverse">
                   <Checkbox
@@ -106,6 +148,7 @@ export function AuthPage() {
                     className="text-right"
                     placeholder="اسمك الكامل"
                   />
+                  {errors.fullName && <p className="text-sm text-red-500">{errors.fullName}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username">اسم المستخدم</Label>
@@ -118,6 +161,7 @@ export function AuthPage() {
                     className="text-right"
                     placeholder="اسم المستخدم"
                   />
+                  {errors.username && <p className="text-sm text-red-500">{errors.username}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signupEmail">البريد الإلكتروني</Label>
@@ -130,6 +174,7 @@ export function AuthPage() {
                     className="text-right"
                     placeholder="example@email.com"
                   />
+                  {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signupPassword">كلمة المرور</Label>
@@ -143,6 +188,8 @@ export function AuthPage() {
                     placeholder="••••••••"
                     minLength={6}
                   />
+                  {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+                  <p className="text-xs text-gray-500">كلمة المرور يجب أن تحتوي على الأقل 6 أحرف</p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "جاري إنشاء الحساب..." : "إنشاء حساب"}
